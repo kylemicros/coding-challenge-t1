@@ -1,17 +1,20 @@
-import { IsNumber, IsOptional, IsPositive } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class PaginationDto {
+  @Type(() => Number)
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   @IsOptional()
-  skip?: number;
+  skip?: number = 0;
 
+  @Type(() => Number)
   @IsNumber()
-  @IsPositive()
+  @Min(1)
   @IsOptional()
   limit?: number = 20;
 
-  // ascending or descending
   @IsOptional()
-  order: 'asc' | 'desc' = 'asc';
+  @IsIn(['asc', 'desc'])
+  order?: 'asc' | 'desc' = 'asc';
 }
