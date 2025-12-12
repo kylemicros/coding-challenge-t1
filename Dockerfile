@@ -62,4 +62,4 @@ COPY --from=build /usr/src/app/dist ./dist
 EXPOSE 3000
 
 # Run the application.
-CMD pnpm start
+CMD ["node", "dist/main.js"]

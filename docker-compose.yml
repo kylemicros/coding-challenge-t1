@@ -2,38 +2,90 @@ services:
   server:
     build:
       context: .
+    container_name: user_management_server
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      NODE_ENV: production
+      DB_HOST: db
+      REDIS_HOST: caching
     ports:
-      - 3000:3000
+      - "${PORT:-3000}:${PORT:-3000}"
+    depends_on:
+      db:
+        condition: service_healthy
+      caching:
+        condition: service_started
+    networks:
+      - user-management-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:${PORT:-3000}/users",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   db:
     image: mysql:8.0
     container_name: user_management_db
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: user_management
-      MYSQL_USER: user
-      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-user_management}
     ports:
-      - 3306:3306
+      - "${DB_PORT:-3306}:3306"
     volumes:
       - db-data:/var/lib/mysql
+    networks:
+      - user-management-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_PASSWORD:-root}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   caching:
     image: redis:alpine
     container_name: user_management_caching
-    restart: always
+    restart: unless-stopped
     ports:
-      - 6379:6379
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - user-management-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: redis-server --appendonly yes
 
 networks:
-  default:
+  user-management-network:
     driver: bridge
 
 volumes:
   db-data:
+    driver: local
+  redis-data:
     driver: local
