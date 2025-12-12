@@ -5,7 +5,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -26,7 +25,6 @@ export class User {
   lastName: string;
 
   @Column({ unique: true })
-  @Index()
   email: string;
 
   @Column({ select: false })
